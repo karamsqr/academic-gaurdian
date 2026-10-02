@@ -5,7 +5,9 @@ from database import engine, Base, get_db
 
 from models import (
     Student,
+    Course,
     Attendance,
+    Assessment,
     Mark
 )
 
@@ -285,3 +287,106 @@ def get_attendance_prediction(
         "future_classes": future_classes,
         "classes_needed_for_75_percent": classes_needed
     }
+@app.get(
+    "/students/{student_id}/attendance-prediction"
+)
+def get_attendance_prediction(
+    student_id: int,
+    future_classes: int = 3,
+    db: Session = Depends(get_db)
+):
+
+    # your existing code...
+
+    return {
+        "student_id": student_id,
+        "current_attendance": current_percentage,
+        "predicted_at_current_rate": predicted_percentage,
+        "predicted_if_attend_all": predicted_if_attend_all,
+        "future_classes": future_classes,
+        "classes_needed_for_75_percent": classes_needed
+    }
+
+
+# =====================================================
+# COURSE-WISE STUDENT DATA
+# =====================================================
+
+@app.get("/students/{student_id}/courses")
+def get_student_courses(
+    student_id: int,
+    db: Session = Depends(get_db)
+):
+
+    # Check if student exists
+    student = db.query(Student).filter(
+        Student.id == student_id
+    ).first()
+
+    if student is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Student not found"
+        )
+
+    # Get all courses
+    courses = db.query(Course).all()
+
+    course_data = []
+
+    for course in courses:
+
+        # -----------------------------
+        # COURSE ATTENDANCE
+        # -----------------------------
+
+        attendance_records = db.query(Attendance).filter(
+            Attendance.student_id == student_id,
+            Attendance.course_id == course.id
+        ).all()
+
+        attendance = calculate_attendance(
+            attendance_records
+        )
+
+        # -----------------------------
+        # COURSE MARKS
+        # -----------------------------
+
+        mark_records = (
+            db.query(Mark)
+            .join(Assessment)
+            .filter(
+                Mark.student_id == student_id,
+                Assessment.course_id == course.id
+            )
+            .all()
+        )
+
+        average_marks = calculate_average_marks(
+            mark_records
+        )
+
+        # -----------------------------
+        # ADD COURSE DATA
+        # -----------------------------
+
+        course_data.append({
+            "course": {
+                "id": course.id,
+                "name": course.name,
+                "code": course.code
+            },
+            "attendance": {
+                "percentage": attendance["percentage"],
+                "present": attendance["present"],
+                "total": attendance["total"],
+                "status": attendance["status"]
+            },
+            "marks": {
+                "average": average_marks,
+                "assessments_completed": len(mark_records)
+            }
+        })
+
+    return course_data
