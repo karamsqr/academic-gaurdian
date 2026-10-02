@@ -86,6 +86,37 @@ def predict_attendance(
     return round(predicted_percentage, 2)
 
 # =====================================================
+# ATTENDANCE PREDICTION IF ALL FUTURE CLASSES ARE ATTENDED
+# =====================================================
+
+def predict_attendance_if_attend_all(
+    present_classes,
+    total_classes,
+    future_classes
+):
+    """
+    Predict attendance if the student attends
+    all upcoming classes.
+    """
+
+    if total_classes == 0:
+        return 0.0
+
+    predicted_present = (
+        present_classes + future_classes
+    )
+
+    predicted_total = (
+        total_classes + future_classes
+    )
+
+    predicted_percentage = (
+        predicted_present / predicted_total
+    ) * 100
+
+    return round(predicted_percentage, 2)
+
+# =====================================================
 # ATTENDANCE RECOVERY CALCULATION
 # =====================================================
 
@@ -126,3 +157,4 @@ def calculate_classes_needed(
             return classes_needed
 
         classes_needed += 1
+        

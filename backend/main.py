@@ -17,8 +17,12 @@ from schemas import (
 from services.attendance import (
     calculate_attendance,
     predict_attendance,
+    predict_attendance_if_attend_all,
     calculate_classes_needed
 )
+
+from services.marks import calculate_average_marks
+
 from services.risk import calculate_risk
 
 from services.notifications import generate_alerts
@@ -143,36 +147,9 @@ def get_student_dashboard(
         Mark.student_id == student_id
     ).all()
 
-    percentages = []
-
-    for mark in marks:
-
-        assessment = mark.assessment
-
-        if assessment and assessment.max_marks > 0:
-
-            percentage = (
-                mark.score /
-                assessment.max_marks
-            ) * 100
-
-            percentages.append(percentage)
-
-
-    if percentages:
-
-        average_marks = sum(percentages) / len(percentages)
-
-    else:
-
-        average_marks = 0
-
-
-    average_marks = round(
-        average_marks,
-        2
+    average_marks = calculate_average_marks(
+        marks
     )
-
     # -------------------------------------------------
     # RISK CALCULATION
     # -------------------------------------------------
@@ -286,6 +263,11 @@ def get_attendance_prediction(
         total_classes,
         future_classes
     )
+    predicted_if_attend_all = predict_attendance_if_attend_all(
+        present_classes,
+        total_classes,
+        future_classes
+    )
     classes_needed = calculate_classes_needed(
         present_classes,
         total_classes
@@ -298,7 +280,8 @@ def get_attendance_prediction(
     return {
         "student_id": student_id,
         "current_attendance": current_percentage,
-        "predicted_attendance": predicted_percentage,
+        "predicted_at_current_rate": predicted_percentage,
+        "predicted_if_attend_all": predicted_if_attend_all,
         "future_classes": future_classes,
         "classes_needed_for_75_percent": classes_needed
     }
