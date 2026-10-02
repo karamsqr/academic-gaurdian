@@ -29,9 +29,26 @@ class RiskInfo(BaseModel):
     reason: str
 
 
-class DashboardResponse(BaseModel):
-    student: StudentResponse
+class CourseInfo(BaseModel):
+    id: int
+    name: str
+    code: str
+
+
+class CourseDashboardInfo(BaseModel):
+    course: CourseInfo
+    attendance: AttendanceInfo
+    marks: MarksInfo
+
+
+class OverallDashboardInfo(BaseModel):
     attendance: AttendanceInfo
     marks: MarksInfo
     risk: RiskInfo
     alerts: List[str]
+
+
+class DashboardResponse(BaseModel):
+    student: StudentResponse
+    overall: OverallDashboardInfo
+    courses: List[CourseDashboardInfo]

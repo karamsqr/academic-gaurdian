@@ -6,13 +6,11 @@ from models import Student, Course, Attendance, Assessment, Mark
 
 def seed_database():
 
-    db = SessionLocal()
+    # Create database tables
+    from database import Base, engine
+    Base.metadata.create_all(bind=engine)
 
-    # Prevent duplicate data if seed is run again
-    if db.query(Student).first():
-        print("Database already contains data.")
-        db.close()
-        return
+    db = SessionLocal()
 
     # =====================================================
     # STUDENTS
@@ -30,8 +28,6 @@ def seed_database():
         roll_number="IT002"
     )
 
-    # Two students with similar names for our
-    # voice/name-matching test
     alex1 = Student(
         name="Alex John",
         email="alex1@example.com",
@@ -94,79 +90,119 @@ def seed_database():
     today = date.today()
 
     # -----------------------------------------------------
-    # John Smith
-    # Good attendance
+    # JOHN SMITH - GOOD
     # -----------------------------------------------------
 
-    for i in range(30):
-        attendance = Attendance(
-            student_id=john.id,
-            course_id=dbms.id,
-            date=today - timedelta(days=i),
-            present=(i % 10 != 0)
-        )
+    for course in [dbms, java, maths]:
 
-        db.add(attendance)
+        for i in range(20):
+
+            db.add(
+                Attendance(
+                    student_id=john.id,
+                    course_id=course.id,
+                    date=today - timedelta(days=i),
+                    present=(i % 10 != 0)
+                )
+            )
 
     # -----------------------------------------------------
-    # David Brown
-    # Poor attendance - HIGH RISK
+    # DAVID BROWN
     # -----------------------------------------------------
+    # DBMS  -> 64%  HIGH RISK
+    # JAVA  -> 75%  WARNING
+    # MATHS -> 90%  GOOD
+    # -----------------------------------------------------
+
+    # DBMS: 16 / 25 = 64%
 
     for i in range(25):
-        attendance = Attendance(
-            student_id=david.id,
-            course_id=dbms.id,
-            date=today - timedelta(days=i),
-            present=(i % 3 != 0)
+
+        db.add(
+            Attendance(
+                student_id=david.id,
+                course_id=dbms.id,
+                date=today - timedelta(days=i),
+                present=(i % 3 != 0)
+            )
         )
 
-        db.add(attendance)
+    # JAVA: 15 / 20 = 75%
 
-    # -----------------------------------------------------
-    # Alex John
-    # Good attendance
-    # -----------------------------------------------------
+    for i in range(20):
 
-    for i in range(30):
-        attendance = Attendance(
-            student_id=alex1.id,
-            course_id=dbms.id,
-            date=today - timedelta(days=i),
-            present=(i % 10 != 0)
+        db.add(
+            Attendance(
+                student_id=david.id,
+                course_id=java.id,
+                date=today - timedelta(days=i),
+                present=(i % 4 != 0)
+            )
         )
 
-        db.add(attendance)
+    # MATHS: 18 / 20 = 90%
 
-    # -----------------------------------------------------
-    # Alex Brown
-    # Average attendance
-    # -----------------------------------------------------
+    for i in range(20):
 
-    for i in range(30):
-        attendance = Attendance(
-            student_id=alex2.id,
-            course_id=dbms.id,
-            date=today - timedelta(days=i),
-            present=(i % 4 != 0)
+        db.add(
+            Attendance(
+                student_id=david.id,
+                course_id=maths.id,
+                date=today - timedelta(days=i),
+                present=(i % 10 != 0)
+            )
         )
 
-        db.add(attendance)
-
     # -----------------------------------------------------
-    # Mike Wilson
-    # Good attendance
+    # ALEX JOHN - GOOD
     # -----------------------------------------------------
 
-    for i in range(30):
-        attendance = Attendance(
-            student_id=mike.id,
-            course_id=dbms.id,
-            date=today - timedelta(days=i),
-            present=(i % 8 != 0)
-        )
+    for course in [dbms, java, maths]:
 
-        db.add(attendance)
+        for i in range(20):
+
+            db.add(
+                Attendance(
+                    student_id=alex1.id,
+                    course_id=course.id,
+                    date=today - timedelta(days=i),
+                    present=(i % 10 != 0)
+                )
+            )
+
+    # -----------------------------------------------------
+    # ALEX BROWN - AVERAGE
+    # -----------------------------------------------------
+
+    for course in [dbms, java, maths]:
+
+        for i in range(20):
+
+            db.add(
+                Attendance(
+                    student_id=alex2.id,
+                    course_id=course.id,
+                    date=today - timedelta(days=i),
+                    present=(i % 4 != 0)
+                )
+            )
+
+    # -----------------------------------------------------
+    # MIKE WILSON - GOOD
+    # -----------------------------------------------------
+
+    for course in [dbms, java, maths]:
+
+        for i in range(20):
+
+            db.add(
+                Attendance(
+                    student_id=mike.id,
+                    course_id=course.id,
+                    date=today - timedelta(days=i),
+                    present=(i % 8 != 0)
+                )
+            )
 
     db.commit()
 
@@ -174,151 +210,224 @@ def seed_database():
     # ASSESSMENTS
     # =====================================================
 
-    quiz1 = Assessment(
-        course_id=dbms.id,
-        name="Quiz 1",
-        max_marks=25,
-        weight=20
-    )
+    assessments = {}
 
-    quiz2 = Assessment(
-        course_id=dbms.id,
-        name="Quiz 2",
-        max_marks=25,
-        weight=20
-    )
+    for course in [dbms, java, maths]:
 
-    assignment1 = Assessment(
-        course_id=dbms.id,
-        name="Assignment 1",
-        max_marks=10,
-        weight=10
-    )
+        quiz1 = Assessment(
+            course_id=course.id,
+            name="Quiz 1",
+            max_marks=25,
+            weight=20
+        )
 
-    db.add_all([
-        quiz1,
-        quiz2,
-        assignment1
-    ])
+        quiz2 = Assessment(
+            course_id=course.id,
+            name="Quiz 2",
+            max_marks=25,
+            weight=20
+        )
 
-    db.commit()
+        assignment1 = Assessment(
+            course_id=course.id,
+            name="Assignment 1",
+            max_marks=10,
+            weight=10
+        )
+
+        db.add_all([
+            quiz1,
+            quiz2,
+            assignment1
+        ])
+
+        db.commit()
+
+        assessments[course.code] = {
+            "quiz1": quiz1,
+            "quiz2": quiz2,
+            "assignment1": assignment1
+        }
 
     # =====================================================
     # MARKS
     # =====================================================
 
+    # -----------------------------------------------------
+    # JOHN SMITH - GOOD
+    # -----------------------------------------------------
+
+    for course in [dbms, java, maths]:
+
+        a = assessments[course.code]
+
+        db.add_all([
+            Mark(
+                student_id=john.id,
+                assessment_id=a["quiz1"].id,
+                score=22
+            ),
+            Mark(
+                student_id=john.id,
+                assessment_id=a["quiz2"].id,
+                score=21
+            ),
+            Mark(
+                student_id=john.id,
+                assessment_id=a["assignment1"].id,
+                score=9
+            )
+        ])
+
+    # -----------------------------------------------------
+    # DAVID BROWN
+    # -----------------------------------------------------
+    # DBMS -> LOW
+    # JAVA -> AVERAGE
+    # MATHS -> GOOD
+    # -----------------------------------------------------
+
+    dbms_a = assessments["DBMS"]
+    java_a = assessments["JAVA"]
+    maths_a = assessments["MATHS"]
+
+    # DBMS - average = 37.33%
+
     db.add_all([
-
-        # -------------------------------------------------
-        # John Smith - GOOD
-        # -------------------------------------------------
-
-        Mark(
-            student_id=john.id,
-            assessment_id=quiz1.id,
-            score=22
-        ),
-
-        Mark(
-            student_id=john.id,
-            assessment_id=quiz2.id,
-            score=21
-        ),
-
-        Mark(
-            student_id=john.id,
-            assessment_id=assignment1.id,
-            score=9
-        ),
-
-        # -------------------------------------------------
-        # David Brown - POOR / HIGH RISK
-        # -------------------------------------------------
-
         Mark(
             student_id=david.id,
-            assessment_id=quiz1.id,
+            assessment_id=dbms_a["quiz1"].id,
             score=10
         ),
-
         Mark(
             student_id=david.id,
-            assessment_id=quiz2.id,
+            assessment_id=dbms_a["quiz2"].id,
             score=8
         ),
-
         Mark(
             student_id=david.id,
-            assessment_id=assignment1.id,
+            assessment_id=dbms_a["assignment1"].id,
             score=4
-        ),
+        )
+    ])
 
-        # -------------------------------------------------
-        # Alex John - GOOD
-        # -------------------------------------------------
+    # JAVA - average = 64%
 
+    db.add_all([
         Mark(
-            student_id=alex1.id,
-            assessment_id=quiz1.id,
-            score=23
-        ),
-
-        Mark(
-            student_id=alex1.id,
-            assessment_id=quiz2.id,
-            score=21
-        ),
-
-        Mark(
-            student_id=alex1.id,
-            assessment_id=assignment1.id,
-            score=9
-        ),
-
-        # -------------------------------------------------
-        # Alex Brown - AVERAGE
-        # -------------------------------------------------
-
-        Mark(
-            student_id=alex2.id,
-            assessment_id=quiz1.id,
+            student_id=david.id,
+            assessment_id=java_a["quiz1"].id,
             score=16
         ),
-
         Mark(
-            student_id=alex2.id,
-            assessment_id=quiz2.id,
+            student_id=david.id,
+            assessment_id=java_a["quiz2"].id,
             score=15
         ),
-
         Mark(
-            student_id=alex2.id,
-            assessment_id=assignment1.id,
-            score=7
-        ),
+            student_id=david.id,
+            assessment_id=java_a["assignment1"].id,
+            score=6
+        )
+    ])
 
-        # -------------------------------------------------
-        # Mike Wilson - GOOD
-        # -------------------------------------------------
+    # MATHS - average = 88%
 
+    db.add_all([
         Mark(
-            student_id=mike.id,
-            assessment_id=quiz1.id,
-            score=20
-        ),
-
-        Mark(
-            student_id=mike.id,
-            assessment_id=quiz2.id,
+            student_id=david.id,
+            assessment_id=maths_a["quiz1"].id,
             score=22
         ),
-
         Mark(
-            student_id=mike.id,
-            assessment_id=assignment1.id,
+            student_id=david.id,
+            assessment_id=maths_a["quiz2"].id,
+            score=22
+        ),
+        Mark(
+            student_id=david.id,
+            assessment_id=maths_a["assignment1"].id,
             score=9
         )
     ])
+
+    # -----------------------------------------------------
+    # ALEX JOHN - GOOD
+    # -----------------------------------------------------
+
+    for course in [dbms, java, maths]:
+
+        a = assessments[course.code]
+
+        db.add_all([
+            Mark(
+                student_id=alex1.id,
+                assessment_id=a["quiz1"].id,
+                score=23
+            ),
+            Mark(
+                student_id=alex1.id,
+                assessment_id=a["quiz2"].id,
+                score=21
+            ),
+            Mark(
+                student_id=alex1.id,
+                assessment_id=a["assignment1"].id,
+                score=9
+            )
+        ])
+
+    # -----------------------------------------------------
+    # ALEX BROWN - AVERAGE
+    # -----------------------------------------------------
+
+    for course in [dbms, java, maths]:
+
+        a = assessments[course.code]
+
+        db.add_all([
+            Mark(
+                student_id=alex2.id,
+                assessment_id=a["quiz1"].id,
+                score=16
+            ),
+            Mark(
+                student_id=alex2.id,
+                assessment_id=a["quiz2"].id,
+                score=15
+            ),
+            Mark(
+                student_id=alex2.id,
+                assessment_id=a["assignment1"].id,
+                score=7
+            )
+        ])
+
+    # -----------------------------------------------------
+    # MIKE WILSON - GOOD
+    # -----------------------------------------------------
+
+    for course in [dbms, java, maths]:
+
+        a = assessments[course.code]
+
+        db.add_all([
+            Mark(
+                student_id=mike.id,
+                assessment_id=a["quiz1"].id,
+                score=20
+            ),
+            Mark(
+                student_id=mike.id,
+                assessment_id=a["quiz2"].id,
+                score=22
+            ),
+            Mark(
+                student_id=mike.id,
+                assessment_id=a["assignment1"].id,
+                score=9
+            )
+        ])
 
     db.commit()
 
@@ -342,6 +451,11 @@ def seed_database():
     print("1 - Database Management Systems (DBMS)")
     print("2 - Java Programming (JAVA)")
     print("3 - Engineering Mathematics (MATHS)")
+    print()
+    print("David Brown demo profile:")
+    print("DBMS  -> Low attendance + Low marks")
+    print("JAVA  -> Warning attendance + Average marks")
+    print("MATHS -> Good attendance + Good marks")
     print()
     print("Voice ambiguity test:")
     print("There are TWO students named Alex.")
