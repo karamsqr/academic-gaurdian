@@ -287,14 +287,6 @@ def get_attendance_prediction(
         "future_classes": future_classes,
         "classes_needed_for_75_percent": classes_needed
     }
-@app.get(
-    "/students/{student_id}/attendance-prediction"
-)
-def get_attendance_prediction(
-    student_id: int,
-    future_classes: int = 3,
-    db: Session = Depends(get_db)
-):
 
     # your existing code...
 
@@ -315,10 +307,14 @@ def get_attendance_prediction(
 @app.get("/students/{student_id}/courses")
 def get_student_courses(
     student_id: int,
+    future_classes: int = 3,
     db: Session = Depends(get_db)
 ):
 
-    # Check if student exists
+    # -------------------------------------------------
+    # FIND STUDENT
+    # -------------------------------------------------
+
     student = db.query(Student).filter(
         Student.id == student_id
     ).first()
@@ -329,16 +325,23 @@ def get_student_courses(
             detail="Student not found"
         )
 
-    # Get all courses
+    # -------------------------------------------------
+    # GET ALL COURSES
+    # -------------------------------------------------
+
     courses = db.query(Course).all()
 
     course_data = []
 
+    # -------------------------------------------------
+    # PROCESS EACH COURSE
+    # -------------------------------------------------
+
     for course in courses:
 
-        # -----------------------------
+        # ---------------------------------------------
         # COURSE ATTENDANCE
-        # -----------------------------
+        # ---------------------------------------------
 
         attendance_records = db.query(Attendance).filter(
             Attendance.student_id == student_id,
@@ -349,9 +352,33 @@ def get_student_courses(
             attendance_records
         )
 
-        # -----------------------------
+        present_classes = attendance["present"]
+        total_classes = attendance["total"]
+
+        # ---------------------------------------------
+        # COURSE ATTENDANCE PREDICTION
+        # ---------------------------------------------
+
+        predicted_percentage = predict_attendance(
+            present_classes,
+            total_classes,
+            future_classes
+        )
+
+        predicted_if_attend_all = predict_attendance_if_attend_all(
+            present_classes,
+            total_classes,
+            future_classes
+        )
+
+        classes_needed = calculate_classes_needed(
+            present_classes,
+            total_classes
+        )
+
+        # ---------------------------------------------
         # COURSE MARKS
-        # -----------------------------
+        # ---------------------------------------------
 
         mark_records = (
             db.query(Mark)
@@ -367,26 +394,50 @@ def get_student_courses(
             mark_records
         )
 
-        # -----------------------------
+        # ---------------------------------------------
         # ADD COURSE DATA
-        # -----------------------------
+        # ---------------------------------------------
 
         course_data.append({
+
             "course": {
+
                 "id": course.id,
+
                 "name": course.name,
+
                 "code": course.code
             },
+
             "attendance": {
+
                 "percentage": attendance["percentage"],
+
                 "present": attendance["present"],
+
                 "total": attendance["total"],
-                "status": attendance["status"]
+
+                "status": attendance["status"],
+
+                "predicted_at_current_rate": predicted_percentage,
+
+                "predicted_if_attend_all": predicted_if_attend_all,
+
+                "classes_needed_for_75_percent": classes_needed,
+
+                "future_classes": future_classes
             },
+
             "marks": {
+
                 "average": average_marks,
+
                 "assessments_completed": len(mark_records)
             }
         })
+
+    # -------------------------------------------------
+    # RETURN COURSE DATA
+    # -------------------------------------------------
 
     return course_data
