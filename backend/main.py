@@ -14,6 +14,11 @@ from schemas import (
     DashboardResponse
 )
 
+from services.attendance import calculate_attendance
+
+from services.risk import calculate_risk
+
+from services.notifications import generate_alerts
 
 app = FastAPI(
     title="Academic Guardian API",
@@ -110,7 +115,6 @@ def get_student_dashboard(
             detail="Student not found"
         )
 
-
     # -------------------------------------------------
     # ATTENDANCE
     # -------------------------------------------------
@@ -119,44 +123,14 @@ def get_student_dashboard(
         Attendance.student_id == student_id
     ).all()
 
-    total_classes = len(attendance_records)
-
-    present_classes = sum(
-        1 for record in attendance_records
-        if record.present
+    attendance = calculate_attendance(
+        attendance_records
     )
 
-    if total_classes > 0:
-
-        attendance_percentage = (
-            present_classes / total_classes
-        ) * 100
-
-    else:
-
-        attendance_percentage = 0
-
-
-    attendance_percentage = round(
-        attendance_percentage,
-        2
-    )
-
-
-    # Attendance status
-
-    if attendance_percentage < 75:
-
-        attendance_status = "DANGER"
-
-    elif attendance_percentage < 80:
-
-        attendance_status = "WARNING"
-
-    else:
-
-        attendance_status = "GOOD"
-
+    attendance_percentage = attendance["percentage"]
+    present_classes = attendance["present"]
+    total_classes = attendance["total"]
+    attendance_status = attendance["status"]
 
     # -------------------------------------------------
     # MARKS
@@ -196,84 +170,26 @@ def get_student_dashboard(
         2
     )
 
-
     # -------------------------------------------------
     # RISK CALCULATION
     # -------------------------------------------------
 
-    if (
-        attendance_percentage < 75
-        and average_marks < 50
-    ):
+    risk = calculate_risk(
+        attendance_percentage,
+        average_marks
+    )
 
-        risk_level = "HIGH"
-
-        risk_reason = (
-            "Low attendance and low academic performance"
-        )
-
-    elif (
-        attendance_percentage < 75
-        or average_marks < 50
-    ):
-
-        risk_level = "MEDIUM"
-
-        if attendance_percentage < 75:
-
-            risk_reason = (
-                "Attendance is below the required level"
-            )
-
-        else:
-
-            risk_reason = (
-                "Academic performance is below the expected level"
-            )
-
-    else:
-
-        risk_level = "LOW"
-
-        risk_reason = (
-            "Attendance and academic performance are healthy"
-        )
-
+    risk_level = risk["level"]
+    risk_reason = risk["reason"]
 
     # -------------------------------------------------
     # ALERTS
     # -------------------------------------------------
 
-    alerts = []
-
-
-    if attendance_percentage < 75:
-
-        alerts.append(
-            "Attendance is below 75%"
-        )
-
-
-    if attendance_percentage >= 75 and attendance_percentage < 80:
-
-        alerts.append(
-            "Attendance is approaching the warning level"
-        )
-
-
-    if average_marks < 50:
-
-        alerts.append(
-            "Academic performance is low"
-        )
-
-
-    if not alerts:
-
-        alerts.append(
-            "No major academic alerts"
-        )
-
+    alerts = generate_alerts(
+        attendance_percentage,
+        average_marks
+    )
 
     # -------------------------------------------------
     # RETURN DASHBOARD
