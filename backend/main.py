@@ -239,9 +239,9 @@ def get_student_dashboard(
 )
 def get_attendance_prediction(
     student_id: int,
+    future_classes: int = 3,
     db: Session = Depends(get_db)
 ):
-
     # -------------------------------------------------
     # FIND STUDENT
     # -------------------------------------------------
@@ -280,7 +280,6 @@ def get_attendance_prediction(
     # PREDICT FUTURE ATTENDANCE
     # -------------------------------------------------
 
-    future_classes = 3
 
     predicted_percentage = predict_attendance(
         present_classes,
