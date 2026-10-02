@@ -14,8 +14,11 @@ from schemas import (
     DashboardResponse
 )
 
-from services.attendance import calculate_attendance
-
+from services.attendance import (
+    calculate_attendance,
+    predict_attendance,
+    calculate_classes_needed
+)
 from services.risk import calculate_risk
 
 from services.notifications import generate_alerts
@@ -225,4 +228,78 @@ def get_student_dashboard(
         },
 
         "alerts": alerts
+    }
+
+# =====================================================
+# ATTENDANCE PREDICTION
+# =====================================================
+
+@app.get(
+    "/students/{student_id}/attendance-prediction"
+)
+def get_attendance_prediction(
+    student_id: int,
+    db: Session = Depends(get_db)
+):
+
+    # -------------------------------------------------
+    # FIND STUDENT
+    # -------------------------------------------------
+
+    student = db.query(Student).filter(
+        Student.id == student_id
+    ).first()
+
+    if student is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Student not found"
+        )
+
+    # -------------------------------------------------
+    # GET ATTENDANCE RECORDS
+    # -------------------------------------------------
+
+    attendance_records = db.query(Attendance).filter(
+        Attendance.student_id == student_id
+    ).all()
+
+    # -------------------------------------------------
+    # CALCULATE CURRENT ATTENDANCE
+    # -------------------------------------------------
+
+    attendance = calculate_attendance(
+        attendance_records
+    )
+
+    present_classes = attendance["present"]
+    total_classes = attendance["total"]
+    current_percentage = attendance["percentage"]
+
+    # -------------------------------------------------
+    # PREDICT FUTURE ATTENDANCE
+    # -------------------------------------------------
+
+    future_classes = 3
+
+    predicted_percentage = predict_attendance(
+        present_classes,
+        total_classes,
+        future_classes
+    )
+    classes_needed = calculate_classes_needed(
+        present_classes,
+        total_classes
+    )
+
+    # -------------------------------------------------
+    # RETURN RESULT
+    # -------------------------------------------------
+
+    return {
+        "student_id": student_id,
+        "current_attendance": current_percentage,
+        "predicted_attendance": predicted_percentage,
+        "future_classes": future_classes,
+        "classes_needed_for_75_percent": classes_needed
     }
